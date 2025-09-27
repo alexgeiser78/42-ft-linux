@@ -1,0 +1,6 @@
+bootstrap_tools.sh
+kernel_setup.sh
+filesystem_setup.sh
+packages_install.sh
+bootloader.sh
+final_check.sh
