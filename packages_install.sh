@@ -188,7 +188,7 @@ rm ninja-linux.zip
 echo "==> Ninja installed."
 
 # ---------------------------
-# 16. Eudev used for managing device nodes in /dev
+# 16. Eudev used for managing DEVICES in /dev
 # ---------------------------
 wget https://github.com/systemd/systemd/releases/download/v252/eudev-252.tar.gz
 tar -xf eudev-252.tar.gz
@@ -730,7 +730,7 @@ rm -rf sysklogd-1.5.1 sysklogd-1.5.1.tar.gz
 echo "==> Sysklogd installed."
 
 # ---------------------------
-# 59. Sysvinit used for initializing the system
+# 59. Sysvinit used for initializing the system (replacing systemd)
 # ---------------------------
 wget https://download.savannah.gnu.org/releases/sysvinit/sysvinit-2.96.tar.gz
 tar -xf sysvinit-2.96.tar.gz
