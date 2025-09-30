@@ -7,14 +7,17 @@
 
 # Check if we are in root mode, because to install software and compile the kernel we need to be one
 
+echo "bootstrap_tools.sh script in progress"
+
 if [ "$(id -u)" -ne 0 ]; then             #if id user notequal to 0 (root)
     echo "This script must be run as root!"
     exit 1
 fi
 
 cd /usr/src
-apt update                             #standard linux update
-
+apk update                             #standard linux update only when apk is in use but not for LFS
+apk add --no-cache build-base gawk pkgconf gnutls-dev
+   #mandatory to do anything
 
 
 
@@ -24,6 +27,7 @@ echo "==> [1/...] Bootstrap installation"
 # ---------------------------
 # 1. WGET   used to download the kernel source code
 # ---------------------------
+echo "WGET"
 wget https://ftp.gnu.org/gnu/wget/wget-1.21.4.tar.gz
 tar xf wget-1.21.4.tar.gz
 cd wget-1.21.4
@@ -156,10 +160,13 @@ cp -rv dest/include/* /usr/include          # copy the headers to the system dir
 cd ..
 rm -rf linux-6.6.6 linux-6.6.6.tar.xz
 
+wget --version
 gcc --version
 make --version
-wget --version
+
 curl --version
+
+apk del build-base gawk
 
 
 echo "==> Bootstrap tools installation finished successfully!"
