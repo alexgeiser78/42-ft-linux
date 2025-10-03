@@ -22,7 +22,7 @@ cd /usr/src
 # ========================================================
 # BINUTILS
 # ========================================================
-echo "### Compilation de binutils ###"
+echo "### Compiling binutils ###"
 BINUTILS_URL="https://ftp.gnu.org/gnu/binutils/binutils-2.41.tar.xz"
 wget -c $BINUTILS_URL
 tar xf $(basename $BINUTILS_URL)
@@ -37,7 +37,7 @@ rm -rf binutils-2.41 build
 # ========================================================
 # GCC
 # ========================================================
-echo "### Compilation de gcc ###"
+echo "### Compiling gcc ###"
 GCC_URL="https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz"
 wget -c $GCC_URL
 tar xf $(basename $GCC_URL)
@@ -53,7 +53,7 @@ rm -rf gcc-13.2.0 build
 # ========================================================
 # MAKE
 # ========================================================
-echo "### Compilation de make ###"
+echo "### Compiliing make ###"
 MAKE_URL="https://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz"
 wget -c $MAKE_URL
 tar xzf $(basename $MAKE_URL)
@@ -68,7 +68,7 @@ rm -rf make-4.4.1 build
 # ========================================================
 # XZ
 # ========================================================
-echo "### Compilation of xz ###"
+echo "### Compiling xz ###"
 XZ_URL="https://tukaani.org/xz/xz-5.4.2.tar.xz"
 wget -c $XZ_URL
 tar xf $(basename $XZ_URL)
@@ -81,6 +81,66 @@ cd ../..
 rm -rf xz-5.4.2 build
 
 # ========================================================
+# BISON
+# ========================================================
+echo "### Compiling bison ###"
+BISON_URL="https://ftp.gnu.org/gnu/bison/bison-3.8.2.tar.xz"
+wget -c $BISON_URL
+tar xf $(basename $BISON_URL)
+cd bison-3.8.2
+mkdir -p build && cd build
+../configure --prefix=$LFS/tools
+make -j$(nproc)
+make install
+cd ../..
+rm -rf bison-3.8.2 build
+
+# ========================================================
+# FLEX
+# ========================================================
+echo "### Compiling flex ###"
+FLEX_URL="https://ftp.gnu.org/gnu/flex/flex-2.6.4.tar.gz"
+wget -c $FLEX_URL
+tar xzf $(basename $FLEX_URL)
+cd flex-2.6.4
+mkdir -p build && cd build
+../configure --prefix=$LFS/tools
+make -j$(nproc)
+make install
+cd ../..
+rm -rf flex-2.6.4 build
+
+# ========================================================
+# GZIP
+# ========================================================
+echo "### Compiling gzip ###"
+GZIP_URL="https://ftp.gnu.org/gnu/gzip/gzip-1.12.tar.xz"
+wget -c $GZIP_URL
+tar xf $(basename $GZIP_URL)
+cd gzip-1.12
+mkdir -p build && cd build
+../configure --prefix=$LFS/tools
+make -j$(nproc)
+make install
+cd ../..
+rm -rf gzip-1.12 build
+
+# ========================================================
+# BC
+# ========================================================
+echo "### Compiling bc ###"
+BC_URL="https://ftp.gnu.org/gnu/bc/bc-1.07.1.tar.gz"
+wget -c $BC_URL
+tar xzf $(basename $BC_URL)
+cd bc-1.07.1
+mkdir -p build && cd build
+../configure --prefix=$LFS/tools
+make -j$(nproc)
+make install
+cd ../..
+rm -rf bc-1.07.1 build
+
+# ========================================================
 # END
 # ========================================================
 echo "### Bootstrap done ###"
@@ -89,5 +149,5 @@ echo "Temporary tools are in $LFS/tools"
 
 
 
-#bison flex gzip bc"
+# gzip bc"
     
