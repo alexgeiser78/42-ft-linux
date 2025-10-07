@@ -22,6 +22,7 @@ cd /usr/src
 # ========================================================
 # BINUTILS
 # ========================================================
+
 echo "### Compiling binutils ###"
 BINUTILS_URL="https://ftp.gnu.org/gnu/binutils/binutils-2.41.tar.xz"
 wget -c $BINUTILS_URL
@@ -37,18 +38,34 @@ rm -rf binutils-2.41 build
 # ========================================================
 # GCC
 # ========================================================
+
 echo "### Compiling gcc ###"
-GCC_URL="https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz"
-wget -c $GCC_URL
-tar xf $(basename $GCC_URL)
-cd gcc-13.2.0
-./contrib/download_prerequisites
-mkdir -p build && cd build
-../configure --prefix=$LFS/tools --disable-multilib --enable-languages=c,c++
-make -j$(nproc)
-make install
-cd ../..
-rm -rf gcc-13.2.0 build
+GCC_PKG="gcc-x86_64-linux-10.2.0.tar.gz"
+GCC_URL="https://sourceforge.net/projects/gcc-precompiled/files/${GCC_PKG}/download"
+cd /usr/src
+wget -c "$GCC_URL" -O "$GCC_PKG"
+tar xf "$GCC_PKG"
+cd gcc-x86_64-linux-10.2.0
+
+cp -r bin $LFS/tools/
+cp -r lib $LFS/tools/
+cp -r include $LFS/tools/
+
+cd /usr/src
+
+rm -rf gcc-x86_64-linux-10.2.0 "$GCC_PKG"
+
+#GCC_URL="https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz"
+#wget -c $GCC_URL
+#tar xf $(basename $GCC_URL)
+#cd gcc-13.2.0
+#./contrib/download_prerequisites
+#mkdir -p build && cd build
+#../configure --prefix=$LFS/tools --disable-multilib --enable-languages=c,c++
+#make -j$(nproc)
+#make install
+#cd ../..
+#rm -rf gcc-13.2.0 build
 
 # ========================================================
 # MAKE
@@ -149,5 +166,5 @@ echo "Temporary tools are in $LFS/tools"
 
 
 
-# gzip bc"
+
     
