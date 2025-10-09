@@ -1,5 +1,14 @@
 cat > version-check.sh << "EOF"
 #!/bin/bash
+
+sudo apt install build-essential dkms linux-headers-$(uname -r)
+sudo apt install -y bison gawk m4 python3 texinfo bash g++ make
+
+sudo update-alternatives --set awk /usr/bin/gawk
+sudo ln -sf /usr/bin/bison /usr/bin/yacc
+sudo ln -sf /bin/bash /bin/sh
+
+fdisk -l /dev/sda
 # A script to list version numbers of critical development tools
 
 # If you have tools installed in other directories, adjust PATH here AND

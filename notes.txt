@@ -1,3 +1,6 @@
+toolcheck.sh
+variable_settings.sh
+
 bootstrap_tools.sh
 toolchain_test.sh
 kernel_setup.sh
@@ -10,3 +13,13 @@ final_check.sh
 
 
 sudo apt install build-essential dkms linux-headers-$(uname -r)
+sudo apt install -y bison gawk m4 python3 texinfo bash g++ make
+
+sudo update-alternatives --set awk /usr/bin/gawk
+sudo ln -sf /usr/bin/bison /usr/bin/yacc
+sudo ln -sf /bin/bash /bin/sh
+
+fdisk -l /dev/sda
+
+
+
