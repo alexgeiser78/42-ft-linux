@@ -11,9 +11,11 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+export LFS=/mnt/lfs
+
 mkdir -v $LFS/sources
 chmod -v a+wt $LFS/sources
-s
+
 cd $LFS/sources
 
 wget https://www.linuxfromscratch.org/lfs/view/stable/wget-list-sysv https://www.linuxfromscratch.org/lfs/view/stable/md5sums
