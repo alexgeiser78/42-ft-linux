@@ -1,5 +1,6 @@
 toolcheck.sh
 variable_settings.sh
+packandpat.sh
 
 bootstrap_tools.sh
 toolchain_test.sh

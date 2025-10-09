@@ -1,6 +1,6 @@
 #!/bin/bash
 # ========================================================
-# Script: bvariable_settings.sh
+# Script: variable_settings.sh
 # Goal: Set environment variables for LFS
 # ========================================================
 
