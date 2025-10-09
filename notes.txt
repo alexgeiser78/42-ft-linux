@@ -7,3 +7,6 @@ system_config.sh
 init_setup.sh
 bootloader.sh
 final_check.sh
+
+
+sudo apt install build-essential dkms linux-headers-$(uname -r)

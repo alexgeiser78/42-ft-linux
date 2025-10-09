@@ -55,7 +55,7 @@ cd /usr/src
 
 rm -rf gcc-x86_64-linux-10.2.0 "$GCC_PKG"
 
-#GCC_URL="https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz"
+om#GCC_URL="https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz"
 #wget -c $GCC_URL
 #tar xf $(basename $GCC_URL)
 #cd gcc-13.2.0
