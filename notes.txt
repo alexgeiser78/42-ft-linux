@@ -1,6 +1,7 @@
 toolcheck.sh
 variable_settings.sh
 packandpat.sh
+toolchain.sh
 
 bootstrap_tools.sh
 toolchain_test.sh
@@ -21,6 +22,45 @@ sudo ln -sf /usr/bin/bison /usr/bin/yacc
 sudo ln -sf /bin/bash /bin/sh
 
 fdisk -l /dev/sda
+
+
+echo $LFS
+sudo mount /dev/sda3 /mnt/lfs
+df -h | grep lfs
+ls $LFS/sources | wc -l
+
+stop:
+cd ~
+tar -czf ~/lfs-tools-backup.tar.gz -C /mnt/lfs tools
+umount -v $LFS/run
+umount -v $LFS/sys
+umount -v $LFS/proc
+umount -v $LFS/dev/pts
+umount -v $LFS/dev
+poweroff
+
+start: 
+export LFS=/mnt/lfs
+mount -v /dev/sdXn $LFS        # remplace sdXn par ta partition LFS (ex: /dev/sdb1)
+mount -v --bind /dev $LFS/dev
+mount -v --bind /dev/pts $LFS/dev/pts
+mount -vt proc proc $LFS/proc
+mount -vt sysfs sysfs $LFS/sys
+mount -vt tmpfs tmpfs $LFS/run
+export LFS=/mnt/lfs
+export LFS_TGT=$(uname -m)-lfs-linux-gnu
+export PATH=$LFS/tools/bin:$PATH
+ls -l $LFS/tools/bin/{ld,as}
+
+
+
+
+
+
+
+
+
+
 
 
 
