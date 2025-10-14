@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # --------------------------------------------------------
-# 0. Set LFS root
+# 0. Define LFS root
 # --------------------------------------------------------
 export LFS=/mnt/lfs
 
@@ -39,7 +39,7 @@ if [ "$(whoami)" != "lfs" ]; then
 fi
 
 # --------------------------------------------------------
-# 3. Setup environment variables for the script
+# 3. Setup environment variables
 # --------------------------------------------------------
 export LFS=/mnt/lfs
 export LFS_TGT=$(uname -m)-lfs-linux-gnu
@@ -48,7 +48,7 @@ export CONFIG_SITE=$LFS/usr/share/config.site
 export MAKEFLAGS=-j$(nproc)
 
 # --------------------------------------------------------
-# 4. Setup shell environment files (~/.bashrc and ~/.bash_profile)
+# 4. Setup shell environment files
 # --------------------------------------------------------
 echo ">> Creating LFS environment files..."
 
@@ -81,19 +81,25 @@ echo ">> Building Binutils (Pass 1)..."
 
 cd $LFS/sources
 
-# Vérifie que le tarball existe
+# Verify that the Binutils tarball exists
 TARBALL=$(ls binutils-*.tar.* 2>/dev/null | head -n1)
 if [ -z "$TARBALL" ]; then
     echo "❌ Binutils tarball not found in $LFS/sources"
     exit 1
 fi
 
-tar -xf "$TARBALL" -C $LFS/sources
-cd $LFS/sources/binutils-*/
+# Clean any previous attempt
+rm -rf binutils-*/
 
+# Extract source
+tar -xf "$TARBALL"
+cd binutils-*/
+
+# Create build directory
 mkdir -v build
 cd build
 
+# Configure
 ../configure --prefix=$LFS/tools \
              --with-sysroot=$LFS \
              --target=$LFS_TGT \
@@ -103,13 +109,21 @@ cd build
              --enable-new-dtags \
              --enable-default-hash-style=gnu
 
+# Build
 make -j$(nproc)
+
+# Install
 make install
 
-# Cleanup
+# Clean up sources
 cd $LFS/sources
 rm -rf binutils-*/
 
+# Verify installation
+echo
 echo "✅ Binutils Pass 1 built successfully!"
+echo "Checking installed binaries:"
+ls -l $LFS/tools/bin/{ar,ld,as} || echo "⚠️ Some binaries missing!"
+
 echo
 echo "Next step: GCC Pass 1"
