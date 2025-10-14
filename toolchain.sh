@@ -39,6 +39,10 @@ fi
 # ========================================================
 
 echo ">> Creating tools directory..."
+mkdir -pv $LFS/{etc,var} $LFS/usr/{bin,lib,sbin} # create essential directories
+for i in bin lib sbin; do
+  ln -sv usr/$i $LFS/$i
+done
 mkdir -pv $LFS/tools # create the tools directory where the temporary toolchain will be installed
 ln -svf $LFS/tools / # create a symlink from /tools to $LFS/tools for easier access
 echo ">> Setting ownership..."
@@ -48,6 +52,44 @@ case $(uname -m) in
   x86_64) mkdir -pv $LFS/lib64 ;;
 esac
 # if the host is x86_64, create a lib64 directory for 64-bit libraries
+
+# ========================================================
+# Adding the LFS User
+# ========================================================
+groupadd lfs
+useradd -s /bin/bash -g lfs -m -k /dev/null lfs
+passwd lfs
+chown -v lfs $LFS/{usr{,/*},var,etc,tools}
+case $(uname -m) in
+  x86_64) chown -v lfs $LFS/lib64 ;;
+esac
+su - lfs
+
+# ========================================================
+# Setting up the environnemt
+# ========================================================
+cat > ~/.bash_profile << "EOF"
+exec env -i HOME=$HOME TERM=$TERM PS1='\u:\w\$ ' /bin/bash
+EOF
+
+cat > ~/.bashrc << "EOF"
+set +h
+umask 022
+LFS=/mnt/lfs
+LC_ALL=POSIX
+LFS_TGT=$(uname -m)-lfs-linux-gnu
+PATH=/usr/bin
+if [ ! -L /bin ]; then PATH=/bin:$PATH; fi
+PATH=$LFS/tools/bin:$PATH
+CONFIG_SITE=$LFS/usr/share/config.site
+export LFS LC_ALL LFS_TGT PATH CONFIG_SITE
+EOF
+[ ! -e /etc/bash.bashrc ] || mv -v /etc/bash.bashrc /etc/bash.bashrc.NOUSE
+export Makeflags='-j6' # Adjust according to your CPU cores
+cat >> ~/.bashrc << "EOF"
+export MAKEFLAGS=-j$(nproc)
+EOF
+source ~/.bash_profile
 
 # ========================================================
 # 3. Compiling the first temporary tool : Binutils - Pass 1

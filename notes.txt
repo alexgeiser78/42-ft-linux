@@ -1,7 +1,9 @@
 toolcheck.sh
 variable_settings.sh
 packandpat.sh
-toolchain.sh
+setup-lfs-root.sh
+--- su - lfs   ---
+toolchain-lfs.sh
 
 bootstrap_tools.sh
 toolchain_test.sh
@@ -30,6 +32,7 @@ df -h | grep lfs
 ls $LFS/sources | wc -l
 
 stop:
+exit
 cd ~
 tar -czf ~/lfs-tools-backup.tar.gz -C /mnt/lfs tools
 umount -v $LFS/run
@@ -37,6 +40,7 @@ umount -v $LFS/sys
 umount -v $LFS/proc
 umount -v $LFS/dev/pts
 umount -v $LFS/dev
+sync
 poweroff
 
 start: 
