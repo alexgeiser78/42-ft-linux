@@ -1,13 +1,37 @@
 #!/bin/bash
 # ========================================================
 # Script: toolchain-lfs.sh
-# Goal: Configure LFS user environment and build Binutils (Pass 1)
+# Goal: Prepare LFS user environment and build Binutils (Pass 1)
 # ========================================================
 
 set -euo pipefail
 
 # --------------------------------------------------------
-# 1. Ensure we are the lfs user
+# 0. Set LFS root
+# --------------------------------------------------------
+export LFS=/mnt/lfs
+
+# --------------------------------------------------------
+# 1. If running as root, mount virtual filesystems and switch to lfs
+# --------------------------------------------------------
+if [ "$(id -u)" -eq 0 ]; then
+    echo ">> Mounting LFS virtual filesystems..."
+    mount -v --bind /dev $LFS/dev
+    mount -v --bind /dev/pts $LFS/dev/pts
+    mount -vt proc proc $LFS/proc
+    mount -vt sysfs sysfs $LFS/sys
+    mount -vt tmpfs tmpfs $LFS/run
+
+    if [ -h $LFS/dev/shm ]; then
+        mkdir -pv $LFS/$(readlink $LFS/dev/shm)
+    fi
+
+    echo ">> Switching to user 'lfs'..."
+    exec su - lfs
+fi
+
+# --------------------------------------------------------
+# 2. Ensure we are the lfs user
 # --------------------------------------------------------
 if [ "$(whoami)" != "lfs" ]; then
     echo "❌ You must run this script as the 'lfs' user!"
@@ -15,17 +39,23 @@ if [ "$(whoami)" != "lfs" ]; then
 fi
 
 # --------------------------------------------------------
-# 2. Setup the shell environment files
+# 3. Setup environment variables for the script
+# --------------------------------------------------------
+export LFS_TGT=$(uname -m)-lfs-linux-gnu
+export PATH=$LFS/tools/bin:$PATH
+export CONFIG_SITE=$LFS/usr/share/config.site
+export MAKEFLAGS=-j$(nproc)
+
+# --------------------------------------------------------
+# 4. Setup shell environment files (~/.bashrc and ~/.bash_profile)
 # --------------------------------------------------------
 echo ">> Creating LFS environment files..."
 
-# ~/.bash_profile
 cat > ~/.bash_profile << "EOF"
 # LFS login shell profile
 # Note: do NOT exec here to allow script continuation
 EOF
 
-# ~/.bashrc
 cat > ~/.bashrc << "EOF"
 set +h
 umask 022
@@ -40,19 +70,11 @@ export LFS LC_ALL LFS_TGT PATH CONFIG_SITE
 export MAKEFLAGS=-j$(nproc)
 EOF
 
-# --- Définitions locales pour le script ---
-export LFS=/mnt/lfs
-export LFS_TGT=$(uname -m)-lfs-linux-gnu
-export PATH=$LFS/tools/bin:$PATH
-export CONFIG_SITE=$LFS/usr/share/config.site
-export MAKEFLAGS=-j$(nproc)
-
-
 echo "✅ Environment initialized for LFS user."
 echo
 
 # --------------------------------------------------------
-# 3. Build Binutils (Pass 1)
+# 5. Build Binutils (Pass 1)
 # --------------------------------------------------------
 echo ">> Building Binutils (Pass 1)..."
 
