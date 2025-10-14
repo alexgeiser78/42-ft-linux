@@ -123,7 +123,10 @@ rm -rf binutils-*/
 echo
 echo "✅ Binutils Pass 1 built successfully!"
 echo "Checking installed binaries:"
-ls -l $LFS/tools/bin/{ar,ld,as} || echo "⚠️ Some binaries missing!"
+ls -l $LFS/tools/bin/x86-64-lfs-linux-gnu-ar --version
+ls -l $LFS/tools/bin/x86-64-lfs-linux-gnu-as --version
+ls -l $LFS/tools/bin/x86-64-lfs-linux-gnu-ld --version
+
 
 echo
 echo "Next step: GCC Pass 1"
