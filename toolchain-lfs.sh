@@ -15,14 +15,17 @@ if [ "$(whoami)" != "lfs" ]; then
 fi
 
 # --------------------------------------------------------
-# 2. Setup the shell environment
+# 2. Setup the shell environment files
 # --------------------------------------------------------
 echo ">> Creating LFS environment files..."
 
+# ~/.bash_profile
 cat > ~/.bash_profile << "EOF"
-exec env -i HOME=$HOME TERM=$TERM PS1='\u:\w\$ ' /bin/bash
+# LFS login shell profile
+# Note: do NOT exec here to allow script continuation
 EOF
 
+# ~/.bashrc
 cat > ~/.bashrc << "EOF"
 set +h
 umask 022
@@ -37,40 +40,4 @@ export LFS LC_ALL LFS_TGT PATH CONFIG_SITE
 export MAKEFLAGS=-j$(nproc)
 EOF
 
-# Recharger le nouvel environnement
-source ~/.bash_profile
-
-echo "Environment initialized for LFS user."
-echo
-
-# --------------------------------------------------------
-# 3. Build Binutils (Pass 1)
-# --------------------------------------------------------
-echo ">> Building Binutils (Pass 1)..."
-
-cd $LFS/sources
-tar -xf binutils-*.tar.* -C $LFS/sources
-cd $LFS/sources/binutils-*/
-
-mkdir -v build
-cd build
-
-../configure --prefix=$LFS/tools \
-             --with-sysroot=$LFS \
-             --target=$LFS_TGT \
-             --disable-nls \
-             --enable-gprofng=no \
-             --disable-werror \
-             --enable-new-dtags  \
-             --enable-default-hash-style=gnu
-
-make
-make install
-
-# Nettoyage
-cd $LFS/sources
-rm -rf binutils-*/
-
-echo "✅ Binutils Pass 1 built successfully!"
-echo
-echo "Next step: GCC Pass 1"
+# Source bashr
