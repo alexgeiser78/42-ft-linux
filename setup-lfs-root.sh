@@ -1,7 +1,7 @@
 #!/bin/bash
 # ========================================================
 # Script: setup-lfs-root.sh
-# Goal: Prepare the base LFS environment (run as root, idempotent)
+# Goal: Prepare the base LFS environment (run as root)
 # ========================================================
 
 set -euo pipefail
@@ -19,68 +19,47 @@ fi
 echo ">> Preparing LFS environment in $LFS"
 
 # --------------------------------------------------------
-# 2. Check if $LFS is mounted
+# 2. Create base directory structure
 # --------------------------------------------------------
-if mountpoint -q $LFS; then
-    echo "✅ $LFS is mounted"
-else
-    echo "❌ $LFS is not mounted! Please mount it before running this script."
-    echo "Example: mount /dev/sdXN /mnt/lfs"
-    exit 1
-fi
-
-# --------------------------------------------------------
-# 3. Create base directory structure
-# --------------------------------------------------------
-echo ">> Creating base directory structure..."
-
-mkdir -pv $LFS/{etc,var}
-mkdir -pv $LFS/usr/{bin,lib,sbin}
+mkdir -pv $LFS/{etc,var} $LFS/usr/{bin,lib,sbin}
 
 for i in bin lib sbin; do
-    if [ -L $LFS/$i ] || [ -e $LFS/$i ]; then
-        echo "⚠️  $LFS/$i already exists, skipping link..."
-    else
-        ln -sv usr/$i $LFS/$i
+    # Create symlinks like /mnt/lfs/bin -> /mnt/lfs/usr/bin
+    if [ ! -L $LFS/$i ]; then
+        ln -sv usr/$i $LFS/$i || true
     fi
 done
 
 # --------------------------------------------------------
-# 4. Handle /tools symlink cleanly
+# 3. Handle /tools symlink cleanly
 # --------------------------------------------------------
 echo ">> Checking /tools link integrity..."
 
-# Clean bad symlink inside LFS if exists
+# Remove any bad symlink /mnt/lfs/tools
 if [ -L $LFS/tools ]; then
-    echo "Removing invalid symlink $LFS/tools"
+    echo "⚠️  Removing invalid symlink $LFS/tools"
     rm -f $LFS/tools
 fi
 
-mkdir -pv $LFS/tools
-
-# Fix or create the /tools link
+# Ensure /tools does not point to itself or exist as dir
 if [ -L /tools ]; then
     LINK_TARGET=$(readlink /tools)
     if [ "$LINK_TARGET" != "$LFS/tools" ]; then
-        echo "Fixing existing /tools symlink (was pointing to: $LINK_TARGET)"
+        echo "⚠️  Removing old /tools symlink ($LINK_TARGET)"
         rm -f /tools
-        ln -sv $LFS/tools /
-    else
-        echo "✅ /tools link already correct → $LFS/tools"
     fi
 elif [ -d /tools ]; then
-    echo "⚠️  /tools exists as a directory, removing it"
+    echo "⚠️  Removing existing /tools directory"
     rm -rf /tools
-    ln -sv $LFS/tools /
-else
-    ln -sv $LFS/tools /
 fi
 
-# --------------------------------------------------------
-# 5. Create the lfs user and group
-# --------------------------------------------------------
-echo ">> Checking user 'lfs'..."
+# Create a fresh, clean /mnt/lfs/tools and link it
+mkdir -pv $LFS/tools
+ln -sv $LFS/tools /tools
 
+# --------------------------------------------------------
+# 4. Create the lfs user and group
+# --------------------------------------------------------
 if ! getent group lfs >/dev/null; then
     groupadd lfs
     echo "✅ Group 'lfs' created."
@@ -91,33 +70,33 @@ if ! id lfs >/dev/null 2>&1; then
     echo "lfs:lfs" | chpasswd
     echo "✅ User 'lfs' created with password 'lfs'"
 else
-    echo "⚠️  User 'lfs' already exists."
+    echo "ℹ️  User 'lfs' already exists."
 fi
 
 # --------------------------------------------------------
-# 6. Set ownership
+# 5. Set ownership
 # --------------------------------------------------------
-echo ">> Setting ownership of $LFS directories..."
+echo ">> Setting ownership of LFS directories..."
 chown -v lfs $LFS/{usr{,/*},var,etc,tools}
 case $(uname -m) in
     x86_64) mkdir -pv $LFS/lib64 && chown -v lfs $LFS/lib64 ;;
 esac
 
 # --------------------------------------------------------
-# 7. Summary and next step
+# 6. Summary and next steps
 # --------------------------------------------------------
-cat << "EOF"
+cat << EOF
 
 ✅ Base environment prepared successfully!
 
 Next steps:
-1. Switch to user 'lfs':
+1. Switch to the 'lfs' user:
      su - lfs
 
-2. Then run the next script:
+2. Then run the next script (toolchain build):
      bash toolchain-lfs.sh
 
-(If you need to stop later, remember to umount cleanly with:
-     umount -Rv /mnt/lfs )
+You can safely unmount later with:
+     umount -Rv \$LFS
 
 EOF
