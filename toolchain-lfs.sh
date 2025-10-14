@@ -40,4 +40,48 @@ export LFS LC_ALL LFS_TGT PATH CONFIG_SITE
 export MAKEFLAGS=-j$(nproc)
 EOF
 
-# Source bashr
+# Source bashrc for this script only
+source ~/.bashrc
+
+echo "✅ Environment initialized for LFS user."
+echo
+
+# --------------------------------------------------------
+# 3. Build Binutils (Pass 1)
+# --------------------------------------------------------
+echo ">> Building Binutils (Pass 1)..."
+
+cd $LFS/sources
+
+# Vérifie que le tarball existe
+TARBALL=$(ls binutils-*.tar.* 2>/dev/null | head -n1)
+if [ -z "$TARBALL" ]; then
+    echo "❌ Binutils tarball not found in $LFS/sources"
+    exit 1
+fi
+
+tar -xf "$TARBALL" -C $LFS/sources
+cd $LFS/sources/binutils-*/
+
+mkdir -v build
+cd build
+
+../configure --prefix=$LFS/tools \
+             --with-sysroot=$LFS \
+             --target=$LFS_TGT \
+             --disable-nls \
+             --enable-gprofng=no \
+             --disable-werror \
+             --enable-new-dtags \
+             --enable-default-hash-style=gnu
+
+make -j$(nproc)
+make install
+
+# Cleanup
+cd $LFS/sources
+rm -rf binutils-*/
+
+echo "✅ Binutils Pass 1 built successfully!"
+echo
+echo "Next step: GCC Pass 1"
