@@ -28,6 +28,7 @@ if [ "$(id -u)" -eq 0 ]; then
 
     echo ">> Switching to user 'lfs'..."
     exec su - lfs
+    cd /usr/src/ft-linux
 fi
 
 # --------------------------------------------------------
@@ -123,9 +124,9 @@ rm -rf binutils-*/
 echo
 echo "✅ Binutils Pass 1 built successfully!"
 echo "Checking installed binaries:"
-ls -l $LFS/tools/bin/x86-64-lfs-linux-gnu-ar --version
-ls -l $LFS/tools/bin/x86-64-lfs-linux-gnu-as --version
-ls -l $LFS/tools/bin/x86-64-lfs-linux-gnu-ld --version
+ls -l $LFS/tools/bin/x86_64-lfs-linux-gnu-ar --version | head -n1
+ls -l $LFS/tools/bin/x86_64-lfs-linux-gnu-as --version | head -n1
+ls -l $LFS/tools/bin/x86_64-lfs-linux-gnu-ld --version | head -n1
 
 
 echo
