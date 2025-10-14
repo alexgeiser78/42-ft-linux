@@ -41,6 +41,7 @@ fi
 # --------------------------------------------------------
 # 3. Setup environment variables for the script
 # --------------------------------------------------------
+export LFS=/mnt/lfs
 export LFS_TGT=$(uname -m)-lfs-linux-gnu
 export PATH=$LFS/tools/bin:$PATH
 export CONFIG_SITE=$LFS/usr/share/config.site
