@@ -40,8 +40,13 @@ export LFS LC_ALL LFS_TGT PATH CONFIG_SITE
 export MAKEFLAGS=-j$(nproc)
 EOF
 
-# Source bashrc for this script only
-source ~/.bashrc
+# --- Définitions locales pour le script ---
+export LFS=/mnt/lfs
+export LFS_TGT=$(uname -m)-lfs-linux-gnu
+export PATH=$LFS/tools/bin:$PATH
+export CONFIG_SITE=$LFS/usr/share/config.site
+export MAKEFLAGS=-j$(nproc)
+
 
 echo "✅ Environment initialized for LFS user."
 echo
