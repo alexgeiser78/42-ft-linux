@@ -197,47 +197,4 @@ export LC_ALL=POSIX
 #$LFS/tools/bin/$LFS_TGT-gcc --version | head -n1
 #echo "Next step: Linux API Headers + Glibc (temporary system)"
 
-# --------------------------------------------------------
-# 7. Install Linux API Headers
-# --------------------------------------------------------
-cd $LFS/sources
 
-# Vérifie la présence du tarball du kernel
-TARBALL=$(ls linux-*.tar.* 2>/dev/null | head -n1)
-if [ -z "$TARBALL" ]; then
-    echo "❌ Linux kernel source tarball not found in $LFS/sources"
-    exit 1
-fi
-
-echo ">> Extracting Linux kernel sources..."
-tar -xf "$TARBALL"
-cd linux-*/
-
-echo ">> Installing Linux API headers..."
-make mrproper   # Clean any previous build artifacts
-
-sudo chown -R lfs:lfs $LFS/usr/include
-sudo chmod -R u+rwX $LFS/usr/include
-
-make headers_install INSTALL_HDR_PATH=$LFS/usr
-
-# Supprimer les fichiers non-headers
-find usr/include -type f ! -name '*.h' -delete
-
-# Copier les headers propres dans $LFS/usr
-cp -rv usr/include $LFS/usr
-
-# Clean up sources
-cd $LFS/sources
-rm -rf linux-*/
-
-# check
-if [ -f $LFS/usr/include/stdio.h ]; then
-    echo "✅ Verification passed: stdio.h exists in $LFS/usr/include"
-else
-    echo "❌ Verification failed: stdio.h missing in $LFS/usr/include"
-fi
-
-echo "✅ Linux API headers installed successfully!"
-echo
-echo "Next step: Build Glibc for the temporary system"
