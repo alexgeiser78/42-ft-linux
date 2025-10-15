@@ -143,12 +143,12 @@ tar -xf gcc-*.tar.* -C $LFS/sources
 cd $LFS/sources/gcc-*/
 
 # Extract prerequisites (MPFR, GMP, MPC)
-tar -xf ../mpfr-4.2.2.tar.xz
-mv -v mpfr-4.2.2 mpfr
-tar -xf ../gmp-6.3.0.tar.xz
-mv -v gmp-6.3.0 gmp
-tar -xf ../mpc-1.3.1.tar.gz
-mv -v mpc-1.3.1 mpc
+tar -xf ../mpfr-*.tar.* 
+mv -v mpfr-* mpfr
+tar -xf ../gmp-*.tar.* 
+mv -v gmp-* gmp
+tar -xf ../mpc-*.tar.* 
+mv -v mpc-* mpc
 
 case $(uname -m) in
   x86_64)
