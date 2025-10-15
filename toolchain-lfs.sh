@@ -86,8 +86,8 @@ export LC_ALL=POSIX
 # Verify that the Binutils tarball exists
 #TARBALL=$(ls binutils-*.tar.* 2>/dev/null | head -n1)
 #if [ -z "$TARBALL" ]; then
-    echo "❌ Binutils tarball not found in $LFS/sources"
-    exit 1
+    #echo "❌ Binutils tarball not found in $LFS/sources"
+    #exit 1
 #fi
 
 # Clean any previous attempt
