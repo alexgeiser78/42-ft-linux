@@ -97,13 +97,20 @@ grep 'SEARCH.*/usr/lib' dummy.log | sed 's|; |\n|g'
 grep "/lib.*/libc.so.6 " dummy.log
 grep found dummy.log
 
-rm -v a.out dummy.log
+rm -v a.out dummy.log  2>/dev/null || echo "⚠️  Could not remove dummy files, skipping"
+
 
 # --------------------------------------------------------
 # 9. Clean up sources
 # --------------------------------------------------------
 cd $LFS/sources
-rm -rf glibc-*/
+for dir in glibc-*/; do
+    if [ -w "$dir" ]; then
+        rm -rf "$dir"
+    else
+        echo "⚠️  Cannot remove $dir (permission denied, skipping)"
+    fi
+done
 
 echo "✅ Glibc installed and verified for temporary system!"
 echo
