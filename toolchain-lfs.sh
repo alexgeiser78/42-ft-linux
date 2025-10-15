@@ -215,6 +215,10 @@ cd linux-*/
 
 echo ">> Installing Linux API headers..."
 make mrproper   # Clean any previous build artifacts
+
+sudo chown -R lfs:lfs $LFS/usr/include
+sudo chmod -R u+rwX $LFS/usr/include
+
 make headers_install INSTALL_HDR_PATH=$LFS/usr
 
 # Supprimer les fichiers non-headers
