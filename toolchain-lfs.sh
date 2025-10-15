@@ -134,65 +134,106 @@ export LC_ALL=POSIX
 #echo "Next step: GCC Pass 1"
 
 # --------------------------------------------------------
-# 4. Build GCC (Pass 1)
+# 6. Build GCC (Pass 1)
 # --------------------------------------------------------
-cd $LFS/sources
+#cd $LFS/sources
 
-echo ">> Extracting GCC sources..."
-tar -xf gcc-*.tar.* -C $LFS/sources
-cd $LFS/sources/gcc-*/
+#echo ">> Extracting GCC sources..."
+#tar -xf gcc-*.tar.* -C $LFS/sources
+#cd $LFS/sources/gcc-*/
 
 # Extract prerequisites (MPFR, GMP, MPC)
-tar -xf ../mpfr-*.tar.* 
-mv -v mpfr-* mpfr
-tar -xf ../gmp-*.tar.* 
-mv -v gmp-* gmp
-tar -xf ../mpc-*.tar.* 
-mv -v mpc-* mpc
+#tar -xf ../mpfr-*.tar.* 
+#mv -v mpfr-* mpfr
+#tar -xf ../gmp-*.tar.* 
+#mv -v gmp-* gmp
+#tar -xf ../mpc-*.tar.* 
+#mv -v mpc-* mpc
 
-case $(uname -m) in
-  x86_64)
-    sed -e '/m64=/s/lib64/lib/' \
-        -i.orig gcc/config/i386/t-linux64
- ;;
-esac
+#case $(uname -m) in
+#  x86_64)
+#    sed -e '/m64=/s/lib64/lib/' \
+#        -i.orig gcc/config/i386/t-linux64
+# ;;
+#esac
 
-mkdir -v build
-cd build
+#mkdir -v build
+#cd build
 
-../configure --target=$LFS_TGT \
-             --prefix=$LFS/tools \
-             --with-glibc-version=2.42 \
-             --with-sysroot=$LFS \
-             --with-newlib \
-             --without-headers \
-             --enable-default-pie      \
-             --enable-default-ssp      \
-             --disable-nls             \
-             --disable-shared          \
-             --disable-multilib        \
-             --disable-threads         \
-             --disable-libatomic       \
-             --disable-libgomp         \
-             --disable-libquadmath     \
-             --disable-libssp          \
-             --disable-libvtv          \
-             --disable-libstdcxx       \
-             --enable-languages=c,c++
+#../configure --target=$LFS_TGT \
+#             --prefix=$LFS/tools \
+#             --with-glibc-version=2.42 \
+#             --with-sysroot=$LFS \
+#             --with-newlib \
+#             --without-headers \
+#             --enable-default-pie      \
+#             --enable-default-ssp      \
+#             --disable-nls             \
+#             --disable-shared          \
+#             --disable-multilib        \
+#             --disable-threads         \
+#             --disable-libatomic       \
+#             --disable-libgomp         \
+#             --disable-libquadmath     \
+#             --disable-libssp          \
+#             --disable-libvtv          \
+#             --disable-libstdcxx       \
+#             --enable-languages=c,c++
 
-make
-make install
+#make
+#make install
 
 
 
 # Cleanup
-cd $LFS/sources
-rm -rf gcc-*/
+#cd $LFS/sources
+#rm -rf gcc-*/
 
-echo "✅ GCC Pass 1 built successfully!"
-echo
+#echo "✅ GCC Pass 1 built successfully!"
+#echo
 
 # Vérif rapide de la présence du compilateur
-ls -l $LFS/tools/bin/$LFS_TGT-gcc
-$LFS/tools/bin/$LFS_TGT-gcc --version | head -n1
-echo "Next step: Linux API Headers + Glibc (temporary system)"
+#ls -l $LFS/tools/bin/$LFS_TGT-gcc
+#$LFS/tools/bin/$LFS_TGT-gcc --version | head -n1
+#echo "Next step: Linux API Headers + Glibc (temporary system)"
+
+# --------------------------------------------------------
+# 7. Install Linux API Headers
+# --------------------------------------------------------
+cd $LFS/sources
+
+# Vérifie la présence du tarball du kernel
+TARBALL=$(ls linux-*.tar.* 2>/dev/null | head -n1)
+if [ -z "$TARBALL" ]; then
+    echo "❌ Linux kernel source tarball not found in $LFS/sources"
+    exit 1
+fi
+
+echo ">> Extracting Linux kernel sources..."
+tar -xf "$TARBALL"
+cd linux-*/
+
+echo ">> Installing Linux API headers..."
+make mrproper   # Clean any previous build artifacts
+make headers_install INSTALL_HDR_PATH=$LFS/usr
+
+# Supprimer les fichiers non-headers
+find usr/include -type f ! -name '*.h' -delete
+
+# Copier les headers propres dans $LFS/usr
+cp -rv usr/include $LFS/usr
+
+# Clean up sources
+cd $LFS/sources
+rm -rf linux-*/
+
+# check
+if [ -f $LFS/usr/include/stdio.h ]; then
+    echo "✅ Verification passed: stdio.h exists in $LFS/usr/include"
+else
+    echo "❌ Verification failed: stdio.h missing in $LFS/usr/include"
+fi
+
+echo "✅ Linux API headers installed successfully!"
+echo
+echo "Next step: Build Glibc for the temporary system"
