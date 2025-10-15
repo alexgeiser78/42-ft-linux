@@ -137,7 +137,11 @@ make -j$(nproc)
 make DESTDIR=$LFS install
 
 # Remove harmful libtool archive files
-rm -v $LFS/usr/lib/lib{stdc++{,exp,fs},supc++}.la || true
+for file in $LFS/usr/lib/libstdc++{,.exp,.fs,.supc++}.la; do
+    if [ -e "$file" ]; then
+        rm -v "$file" 2>/dev/null || echo "⚠️  Cannot remove $file (permission denied, skipping)"
+    fi
+done
 
 echo "✅ Libstdc++ installed for temporary system!"
 echo
