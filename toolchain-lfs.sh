@@ -46,87 +46,153 @@ export LFS_TGT=$(uname -m)-lfs-linux-gnu
 export PATH=$LFS/tools/bin:$PATH
 export CONFIG_SITE=$LFS/usr/share/config.site
 export MAKEFLAGS=-j$(nproc)
+export LC_ALL=POSIX
+
 
 # --------------------------------------------------------
 # 4. Setup shell environment files
 # --------------------------------------------------------
-echo ">> Creating LFS environment files..."
+#echo ">> Creating LFS environment files..."
 
-cat > ~/.bash_profile << "EOF"
+#cat > ~/.bash_profile << "EOF"
 # LFS login shell profile
 # Note: do NOT exec here to allow script continuation
-EOF
+#EOF
 
-cat > ~/.bashrc << "EOF"
-set +h
-umask 022
-LFS=/mnt/lfs
-LC_ALL=POSIX
-LFS_TGT=$(uname -m)-lfs-linux-gnu
-PATH=/usr/bin
-if [ ! -L /bin ]; then PATH=/bin:$PATH; fi
-PATH=$LFS/tools/bin:$PATH
-CONFIG_SITE=$LFS/usr/share/config.site
-export LFS LC_ALL LFS_TGT PATH CONFIG_SITE
-export MAKEFLAGS=-j$(nproc)
-EOF
+#cat > ~/.bashrc << "EOF"
+#set +h
+#umask 022
+#LFS=/mnt/lfs
+#LC_ALL=POSIX
+#LFS_TGT=$(uname -m)-lfs-linux-gnu
+#PATH=/usr/bin
+#if [ ! -L /bin ]; then PATH=/bin:$PATH; fi
+#PATH=$LFS/tools/bin:$PATH
+#CONFIG_SITE=$LFS/usr/share/config.site
+#export LFS LC_ALL LFS_TGT PATH CONFIG_SITE
+#export MAKEFLAGS=-j$(nproc)
+#EOF
 
-echo "✅ Environment initialized for LFS user."
-echo
+#echo "✅ Environment initialized for LFS user."
+#echo
 
 # --------------------------------------------------------
 # 5. Build Binutils (Pass 1)
 # --------------------------------------------------------
-echo ">> Building Binutils (Pass 1)..."
+#echo ">> Building Binutils (Pass 1)..."
 
-cd $LFS/sources
+#cd $LFS/sources
 
 # Verify that the Binutils tarball exists
-TARBALL=$(ls binutils-*.tar.* 2>/dev/null | head -n1)
-if [ -z "$TARBALL" ]; then
+#TARBALL=$(ls binutils-*.tar.* 2>/dev/null | head -n1)
+#if [ -z "$TARBALL" ]; then
     echo "❌ Binutils tarball not found in $LFS/sources"
     exit 1
-fi
+#fi
 
 # Clean any previous attempt
-rm -rf binutils-*/
+#rm -rf binutils-*/
 
 # Extract source
-tar -xf "$TARBALL"
-cd binutils-*/
+#tar -xf "$TARBALL"
+#cd binutils-*/
 
 # Create build directory
+#mkdir -v build
+#cd build
+
+# Configure
+#../configure --prefix=$LFS/tools \
+#             --with-sysroot=$LFS \
+#             --target=$LFS_TGT \
+#             --disable-nls \
+#             --enable-gprofng=no \
+#             --disable-werror \
+#             --enable-new-dtags \
+#             --enable-default-hash-style=gnu
+
+# Build
+#make -j$(nproc)
+
+# Install
+#make install
+
+# Clean up sources
+#cd $LFS/sources
+#rm -rf binutils-*/
+
+# Verify installation
+#echo
+#echo "✅ Binutils Pass 1 built successfully!"
+#echo "Checking installed binaries:"
+#$LFS/tools/bin/x86_64-lfs-linux-gnu-ar --version | head -n1
+#$LFS/tools/bin/x86_64-lfs-linux-gnu-as --version | head -n1
+#$LFS/tools/bin/x86_64-lfs-linux-gnu-ld --version | head -n1
+
+
+#echo
+#echo "Next step: GCC Pass 1"
+
+# --------------------------------------------------------
+# 4. Build GCC (Pass 1)
+# --------------------------------------------------------
+cd $LFS/sources
+
+echo ">> Extracting GCC sources..."
+tar -xf gcc-*.tar.* -C $LFS/sources
+cd $LFS/sources/gcc-*/
+
+# Extract prerequisites (MPFR, GMP, MPC)
+tar -xf ../mpfr-4.2.2.tar.xz
+mv -v mpfr-4.2.2 mpfr
+tar -xf ../gmp-6.3.0.tar.xz
+mv -v gmp-6.3.0 gmp
+tar -xf ../mpc-1.3.1.tar.gz
+mv -v mpc-1.3.1 mpc
+
+case $(uname -m) in
+  x86_64)
+    sed -e '/m64=/s/lib64/lib/' \
+        -i.orig gcc/config/i386/t-linux64
+ ;;
+esac
+
 mkdir -v build
 cd build
 
-# Configure
-../configure --prefix=$LFS/tools \
+../configure --target=$LFS_TGT \
+             --prefix=$LFS/tools \
+             --with-glibc-version=2.42 \
              --with-sysroot=$LFS \
-             --target=$LFS_TGT \
-             --disable-nls \
-             --enable-gprofng=no \
-             --disable-werror \
-             --enable-new-dtags \
-             --enable-default-hash-style=gnu
+             --with-newlib \
+             --without-headers \
+             --enable-default-pie      \
+             --enable-default-ssp      \
+             --disable-nls             \
+             --disable-shared          \
+             --disable-multilib        \
+             --disable-threads         \
+             --disable-libatomic       \
+             --disable-libgomp         \
+             --disable-libquadmath     \
+             --disable-libssp          \
+             --disable-libvtv          \
+             --disable-libstdcxx       \
+             --enable-languages=c,c++
 
-# Build
-make -j$(nproc)
-
-# Install
+make
 make install
 
-# Clean up sources
+
+
+# Cleanup
 cd $LFS/sources
-rm -rf binutils-*/
+rm -rf gcc-*/
 
-# Verify installation
+echo "✅ GCC Pass 1 built successfully!"
 echo
-echo "✅ Binutils Pass 1 built successfully!"
-echo "Checking installed binaries:"
-$LFS/tools/bin/x86_64-lfs-linux-gnu-ar --version | head -n1
-$LFS/tools/bin/x86_64-lfs-linux-gnu-as --version | head -n1
-$LFS/tools/bin/x86_64-lfs-linux-gnu-ld --version | head -n1
 
-
-echo
-echo "Next step: GCC Pass 1"
+# Vérif rapide de la présence du compilateur
+ls -l $LFS/tools/bin/$LFS_TGT-gcc
+$LFS/tools/bin/$LFS_TGT-gcc --version | head -n1
+echo "Next step: Linux API Headers + Glibc (temporary system)"
