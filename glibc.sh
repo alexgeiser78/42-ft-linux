@@ -1,13 +1,13 @@
 #!/bin/bash
 # ========================================================
 # Script: glibc-lfs.sh
-# Goal: Build and install Glibc for the temporary LFS system
+# Goal: Build and install Glibc + Libstdc++ for the temporary LFS system
 # ========================================================
 
 set -euo pipefail
 
 # --------------------------------------------------------
-# 0. Define LFS root
+# 0. Define LFS root and environment
 # --------------------------------------------------------
 export LFS=/mnt/lfs
 export LFS_TGT=$(uname -m)-lfs-linux-gnu
@@ -27,7 +27,6 @@ fi
 # 2. Extract Glibc sources
 # --------------------------------------------------------
 cd $LFS/sources
-
 TARBALL=$(ls glibc-*.tar.* 2>/dev/null | head -n1)
 if [ -z "$TARBALL" ]; then
     echo "❌ Glibc tarball not found in $LFS/sources"
@@ -58,12 +57,12 @@ cd build
 ../configure --prefix=/usr \
              --host=$LFS_TGT \
              --build=$(../scripts/config.guess) \
-             --disable-nscd                     \
-             libc_cv_slibdir=/usr/lib           \
+             --disable-nscd \
+             libc_cv_slibdir=/usr/lib \
              --enable-kernel=5.4
 
 # --------------------------------------------------------
-# 6. Build and install
+# 6. Build and install Glibc
 # --------------------------------------------------------
 make -j$(nproc)
 make DESTDIR=$LFS install
@@ -82,7 +81,7 @@ case $(uname -m) in
 esac
 
 # --------------------------------------------------------
-# 8. Test the toolchain and Glibc installation
+# 8. Test the Glibc installation
 # --------------------------------------------------------
 echo ">> Running dummy compilation to verify Glibc..."
 echo 'int main(){}' | $LFS_TGT-gcc -x c - -v -Wl,--verbose &> dummy.log
@@ -97,24 +96,16 @@ grep 'SEARCH.*/usr/lib' dummy.log | sed 's|; |\n|g'
 grep "/lib.*/libc.so.6 " dummy.log
 grep found dummy.log
 
-rm -v a.out dummy.log  2>/dev/null || echo "⚠️  Could not remove dummy files, skipping"
-
+rm -v a.out dummy.log
 
 # --------------------------------------------------------
-# 9. Clean up sources
+# 9. Clean up Glibc sources
 # --------------------------------------------------------
-cd $LFS/sources
-for dir in glibc-*/; do
-    if [ -w "$dir" ]; then
-        rm -rf "$dir"
-    else
-        echo "⚠️  Cannot remove $dir (permission denied, skipping)"
-    fi
-done
+#cd $LFS/sources
+#rm -rf glibc-*/
 
 echo "✅ Glibc installed and verified for temporary system!"
 echo
-echo "Next step: Build Binutils and GCC (second pass) for temporary toolchain"
 
 # --------------------------------------------------------
 # 10. Build and install Libstdc++ from GCC-15.2.0
@@ -142,13 +133,6 @@ cd build-libstdc++
 
 make -j$(nproc)
 make DESTDIR=$LFS install
-
-# Remove harmful libtool archive files
-for file in $LFS/usr/lib/libstdc++{,.exp,.fs,.supc++}.la; do
-    if [ -e "$file" ]; then
-        rm -v "$file" 2>/dev/null || echo "⚠️  Cannot remove $file (permission denied, skipping)"
-    fi
-done
 
 echo "✅ Libstdc++ installed for temporary system!"
 echo
