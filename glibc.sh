@@ -96,14 +96,16 @@ grep 'SEARCH.*/usr/lib' dummy.log | sed 's|; |\n|g'
 grep "/lib.*/libc.so.6 " dummy.log
 grep found dummy.log
 
-# Supprime uniquement les fichiers temporaires que lfs peut gérer
-rm -v a.out dummy.log || true
+rm -v a.out dummy.log
 
 # --------------------------------------------------------
-# 9. Leave sources intact for root cleanup later
+# 9. Clean up Glibc sources
 # --------------------------------------------------------
-echo "✅ Glibc built and tested under LFS user!"
-echo "Sources remain, root can clean them after."
+cd $LFS/sources
+rm -rf glibc-*/
+
+echo "✅ Glibc installed and verified for temporary system!"
+echo
 
 # --------------------------------------------------------
 # 10. Build and install Libstdc++ from GCC-15.2.0
@@ -132,6 +134,9 @@ cd build-libstdc++
 make -j$(nproc)
 make DESTDIR=$LFS install
 
-echo "✅ Libstdc++ built and installed under LFS user!"
+# Remove harmful libtool archive files
+rm -v $LFS/usr/lib/lib{stdc++{,exp,fs},supc++}.la || true
+
+echo "✅ Libstdc++ installed for temporary system!"
 echo
-echo "Next step: Root can remove build directories and libtool .la files if desired"
+echo "Next step: Continue with Binutils/GCC second pass"
