@@ -4,10 +4,12 @@
 4 setup-lfs-root.sh
 5 --- su - lfs   ---
 6 toolchain-lfs.sh
-7 exit
+7 --- exit (root) ---
 8 linux_headers.sh
 9 --- su - lfs   ---
-glibc.sh
+10 glibc.sh
+11 --- exit (root) ---
+
 
 bootstrap_tools.sh
 toolchain_test.sh
