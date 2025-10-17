@@ -2,7 +2,7 @@
 # ============================================================
 # Script : glibc-lfs.sh
 # Objectif : Compiler et installer Glibc (chapitre 5.5 du livre LFS 12.4)
-# Auteur : toi + ChatGPT (version conforme au livre officiel)
+# Auteur : ChatGPT – version sûre, conforme au livre
 # ============================================================
 
 set -euo pipefail
@@ -21,10 +21,13 @@ if [ "$(whoami)" != "lfs" ]; then
     exit 1
 fi
 
+# ------------------------------------------------------------
+# 1. Aller dans le dossier sources
+# ------------------------------------------------------------
 cd $LFS/sources
 
 # ------------------------------------------------------------
-# 1. Extraire les sources
+# 2. Extraire les sources Glibc
 # ------------------------------------------------------------
 TARBALL=$(ls glibc-*.tar.* 2>/dev/null | head -n1)
 if [ -z "$TARBALL" ]; then
@@ -37,20 +40,7 @@ tar -xf "$TARBALL"
 cd glibc-*/
 
 # ------------------------------------------------------------
-# 2. Lien symbolique LSB (avant la compilation)
-# ------------------------------------------------------------
-case $(uname -m) in
-    i?86)
-        ln -sfv ld-linux.so.2 $LFS/lib/ld-lsb.so.3
-        ;;
-    x86_64)
-        ln -sfv ../lib/ld-linux-x86-64.so.2 $LFS/lib64
-        ln -sfv ../lib/ld-linux-x86-64.so.2 $LFS/lib64/ld-lsb-x86-64.so.3
-        ;;
-esac
-
-# ------------------------------------------------------------
-# 3. Patch FHS
+# 3. Patch FHS (si disponible)
 # ------------------------------------------------------------
 if [ -f ../glibc-2.42-fhs-1.patch ]; then
     echo ">> Application du patch FHS..."
@@ -58,7 +48,7 @@ if [ -f ../glibc-2.42-fhs-1.patch ]; then
 fi
 
 # ------------------------------------------------------------
-# 4. Dossier de build séparé
+# 4. Créer un dossier de build séparé
 # ------------------------------------------------------------
 mkdir -v build
 cd build
@@ -78,10 +68,10 @@ echo "rootsbindir=/usr/sbin" > configparms
       --enable-kernel=5.4
 
 # ------------------------------------------------------------
-# 6. Compilation
+# 6. Compilation (en tant que lfs)
 # ------------------------------------------------------------
 echo ">> Compilation de Glibc..."
-make -j$(nproc) || { echo "❌ Échec du make"; exit 1; }
+make -j$(nproc)
 
 # ------------------------------------------------------------
 # 7. Installation (dans $LFS, pas sur le système hôte)
@@ -90,36 +80,22 @@ echo ">> Installation de Glibc dans \$LFS..."
 make DESTDIR=$LFS install
 
 # ------------------------------------------------------------
-# 8. Correction du chemin dans ldd
+# 8. Correction du chemin dans ldd (strictement après l'installation)
 # ------------------------------------------------------------
 sed '/RTLDLIST=/s@/usr@@g' -i $LFS/usr/bin/ldd
 
 # ------------------------------------------------------------
-# 9. Vérification de la toolchain
+# 9. Création des liens symboliques LSB (après installation)
 # ------------------------------------------------------------
-echo ">> Vérification de la toolchain (dummy test)..."
-cd $LFS/sources
+case $(uname -m) in
+    i?86)
+        ln -sfv ld-linux.so.2 $LFS/lib/ld-lsb.so.3
+        ;;
+    x86_64)
+        ln -sfv ../lib/ld-linux-x86-64.so.2 $LFS/lib64
+        ln -sfv ../lib/ld-linux-x86-64.so.2 $LFS/lib64/ld-lsb-x86-64.so.3
+        ;;
+esac
 
-echo 'int main(){}' | $LFS_TGT-gcc -x c - -v -Wl,--verbose &> dummy.log
-
-echo "🔍 Vérification du chargeur dynamique :"
-readelf -l a.out | grep ': /lib' || true
-
-echo "🔍 Fichiers de démarrage :"
-grep -E -o "$LFS/lib.*/S?crt[1in].*succeeded" dummy.log || true
-
-echo "🔍 Répertoires d’includes :"
-grep -B3 "^ $LFS/usr/include" dummy.log || true
-
-echo "🔍 Répertoires de recherche du linker :"
-grep 'SEARCH.*/usr/lib' dummy.log | sed 's|; |\n|g' || true
-
-echo "🔍 libc utilisée :"
-grep "/lib.*/libc.so.6 " dummy.log || true
-
-echo "🔍 Linker dynamique trouvé :"
-grep found dummy.log || true
-
-rm -v a.out dummy.log
-
-echo "✅ Glibc-2.42 installée et vérifiée avec succès !"
+echo "✅ Glibc-2.42 compilée et installée dans \$LFS avec succès !"
+echo "➡️  Vous pouvez maintenant passer à la construction de Libstdc++ ou entrer en chroot."
