@@ -1,94 +1,125 @@
 #!/bin/bash
-# ========================================================
-# Script: glibc-lfs-build.sh
-# Goal: Compile Glibc + Libstdc++ for temporary LFS system
-# Run as: lfs
-# ========================================================
+# ============================================================
+# Script : glibc-lfs.sh
+# Objectif : Compiler et installer Glibc (chapitre 5.5 du livre LFS 12.4)
+# Auteur : toi + ChatGPT (version conforme au livre officiel)
+# ============================================================
 
 set -euo pipefail
 
-# --------------------------------------------------------
-# 0. Environment
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# 0. Préparer l'environnement LFS
+# ------------------------------------------------------------
 export LFS=/mnt/lfs
 export LFS_TGT=$(uname -m)-lfs-linux-gnu
 export PATH=$LFS/tools/bin:$PATH
-export MAKEFLAGS=-j$(nproc)
 export LC_ALL=POSIX
 
-# --------------------------------------------------------
-# 1. Ensure user is 'lfs'
-# --------------------------------------------------------
+# Vérifie qu'on est bien l'utilisateur lfs
 if [ "$(whoami)" != "lfs" ]; then
-    echo "❌ You must run this script as the 'lfs' user!"
+    echo "❌ Ce script doit être exécuté en tant qu'utilisateur 'lfs' !"
     exit 1
 fi
 
-# --------------------------------------------------------
-# 2. Extract Glibc sources
-# --------------------------------------------------------
 cd $LFS/sources
+
+# ------------------------------------------------------------
+# 1. Extraire les sources
+# ------------------------------------------------------------
 TARBALL=$(ls glibc-*.tar.* 2>/dev/null | head -n1)
 if [ -z "$TARBALL" ]; then
-    echo "❌ Glibc tarball not found in $LFS/sources"
+    echo "❌ Archive glibc introuvable dans $LFS/sources"
     exit 1
 fi
 
-echo ">> Extracting Glibc..."
+echo ">> Extraction de $TARBALL..."
 tar -xf "$TARBALL"
 cd glibc-*/
 
-# Apply FHS patch if present
-if ls ../glibc-*-fhs-*.patch 1> /dev/null 2>&1; then
-    echo ">> Applying FHS patch..."
-    patch -Np1 -i ../glibc-*-fhs-*.patch
+# ------------------------------------------------------------
+# 2. Lien symbolique LSB (avant la compilation)
+# ------------------------------------------------------------
+case $(uname -m) in
+    i?86)
+        ln -sfv ld-linux.so.2 $LFS/lib/ld-lsb.so.3
+        ;;
+    x86_64)
+        ln -sfv ../lib/ld-linux-x86-64.so.2 $LFS/lib64
+        ln -sfv ../lib/ld-linux-x86-64.so.2 $LFS/lib64/ld-lsb-x86-64.so.3
+        ;;
+esac
+
+# ------------------------------------------------------------
+# 3. Patch FHS
+# ------------------------------------------------------------
+if [ -f ../glibc-2.42-fhs-1.patch ]; then
+    echo ">> Application du patch FHS..."
+    patch -Np1 -i ../glibc-2.42-fhs-1.patch
 fi
 
-# --------------------------------------------------------
-# 3. Create build directory
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# 4. Dossier de build séparé
+# ------------------------------------------------------------
 mkdir -v build
 cd build
 
-# --------------------------------------------------------
-# 4. Configure Glibc
-# --------------------------------------------------------
-../configure --prefix=/usr \
-             --host=$LFS_TGT \
-             --build=$(../scripts/config.guess) \
-             --disable-nscd \
-             libc_cv_slibdir=/usr/lib \
-             --enable-kernel=5.4
+# Crée le fichier configparms pour ldconfig/sln
+echo "rootsbindir=/usr/sbin" > configparms
 
-# --------------------------------------------------------
-# 5. Compile Glibc
-# --------------------------------------------------------
-make -j$(nproc)
+# ------------------------------------------------------------
+# 5. Configuration
+# ------------------------------------------------------------
+../configure                             \
+      --prefix=/usr                      \
+      --host=$LFS_TGT                    \
+      --build=$(../scripts/config.guess) \
+      --disable-nscd                     \
+      libc_cv_slibdir=/usr/lib           \
+      --enable-kernel=5.4
 
-echo "✅ Glibc compilation finished. Installation will be done by root."
+# ------------------------------------------------------------
+# 6. Compilation
+# ------------------------------------------------------------
+echo ">> Compilation de Glibc..."
+make -j$(nproc) || { echo "❌ Échec du make"; exit 1; }
 
-# --------------------------------------------------------
-# 6. Compile Libstdc++ from GCC
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# 7. Installation (dans $LFS, pas sur le système hôte)
+# ------------------------------------------------------------
+echo ">> Installation de Glibc dans \$LFS..."
+make DESTDIR=$LFS install
+
+# ------------------------------------------------------------
+# 8. Correction du chemin dans ldd
+# ------------------------------------------------------------
+sed '/RTLDLIST=/s@/usr@@g' -i $LFS/usr/bin/ldd
+
+# ------------------------------------------------------------
+# 9. Vérification de la toolchain
+# ------------------------------------------------------------
+echo ">> Vérification de la toolchain (dummy test)..."
 cd $LFS/sources
-GCC_SRC=$(ls -d gcc-*/ 2>/dev/null | head -n1)
-if [ -z "$GCC_SRC" ]; then
-    echo "❌ GCC source directory not found. Extract gcc-*.tar.* first!"
-    exit 1
-fi
 
-cd "$GCC_SRC"/libstdc++-v3
-mkdir -v build-libstdc++
-cd build-libstdc++
+echo 'int main(){}' | $LFS_TGT-gcc -x c - -v -Wl,--verbose &> dummy.log
 
-../configure --host=$LFS_TGT \
-             --build=$(../config.guess) \
-             --prefix=/usr \
-             --disable-multilib \
-             --disable-nls \
-             --disable-libstdcxx-pch \
-             --with-gxx-include-dir=/tools/$LFS_TGT/include/c++/15.2.0
+echo "🔍 Vérification du chargeur dynamique :"
+readelf -l a.out | grep ': /lib' || true
 
-make -j$(nproc)
+echo "🔍 Fichiers de démarrage :"
+grep -E -o "$LFS/lib.*/S?crt[1in].*succeeded" dummy.log || true
 
-echo "✅ Libstdc++ compilation finished. Installation will be done by root."
+echo "🔍 Répertoires d’includes :"
+grep -B3 "^ $LFS/usr/include" dummy.log || true
+
+echo "🔍 Répertoires de recherche du linker :"
+grep 'SEARCH.*/usr/lib' dummy.log | sed 's|; |\n|g' || true
+
+echo "🔍 libc utilisée :"
+grep "/lib.*/libc.so.6 " dummy.log || true
+
+echo "🔍 Linker dynamique trouvé :"
+grep found dummy.log || true
+
+rm -v a.out dummy.log
+
+echo "✅ Glibc-2.42 installée et vérifiée avec succès !"

@@ -9,6 +9,8 @@
 9 --- su - lfs   ---
 10 glibc.sh
 11 --- exit (root) ---
+12 glibc_install.sh
+13 toolchain_test.sh
 
 
 bootstrap_tools.sh
